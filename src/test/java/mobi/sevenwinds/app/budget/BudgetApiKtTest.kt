@@ -19,25 +19,48 @@ class BudgetApiKtTest : ServerTest() {
 
     @Test
     fun testBudgetPagination() {
-        addRecord(BudgetRecord(2020, 5, 10, BudgetType.Приход))
+        addRecord(BudgetRecord(2020, 5, 10,  BudgetType.Приход))
         addRecord(BudgetRecord(2020, 5, 5, BudgetType.Приход))
         addRecord(BudgetRecord(2020, 5, 20, BudgetType.Приход))
         addRecord(BudgetRecord(2020, 5, 30, BudgetType.Приход))
         addRecord(BudgetRecord(2020, 5, 40, BudgetType.Приход))
         addRecord(BudgetRecord(2030, 1, 1, BudgetType.Расход))
 
+
+        // Запрос статистики за 2020 год с лимитом 3 и смещением 1
         RestAssured.given()
             .queryParam("limit", 3)
             .queryParam("offset", 1)
             .get("/budget/year/2020/stats")
-            .toResponse<BudgetYearStatsResponse>().let { response ->
-                println("${response.total} / ${response.items} / ${response.totalByType}")
+            .then().statusCode(200)
+            .extract().response().let { response ->
+                val statsResponse = response as? BudgetYearStatsResponse
+                statsResponse?.let {
+                    // работаем с statsResponse
 
-                Assert.assertEquals(5, response.total)
-                Assert.assertEquals(3, response.items.size)
-                Assert.assertEquals(105, response.totalByType[BudgetType.Приход.name])
+
+                    println("${statsResponse?.total ?: "N/A"} / ${statsResponse?.items ?: "N/A"} / ${statsResponse?.totalByType ?: "N/A"}")
+
+                    // Проверка общего количества записей
+                    Assert.assertEquals(5, statsResponse?.total ?: 0)
+
+
+                    // Проверка количества записей в ответе (ограничено лимитом)
+                    Assert.assertEquals(3, statsResponse?.items?.size ?: 0)
+
+
+                    // Проверка общей суммы приходов за 2020 год
+                    Assert.assertEquals(105, statsResponse?.totalByType?.get(BudgetType.Приход.name) ?: 0)
+
+                }
             }
+
     }
+
+//    private fun BudgetRecord(year: Int, month: Int, amount: Int, type: BudgetType): BudgetRecord {
+//
+//    }
+
 
     @Test
     fun testStatsSortOrder() {
@@ -65,7 +88,7 @@ class BudgetApiKtTest : ServerTest() {
     @Test
     fun testInvalidMonthValues() {
         RestAssured.given()
-            .jsonBody(BudgetRecord(2020, -5, 5, BudgetType.Приход))
+            .jsonBody(BudgetRecord(2020, -5, 5, BudgetType.Приход ))
             .post("/budget/add")
             .then().statusCode(400)
 

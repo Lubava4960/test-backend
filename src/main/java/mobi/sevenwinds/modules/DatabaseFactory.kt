@@ -22,8 +22,9 @@ object DatabaseFactory {
 
         val flyway = Flyway.configure().dataSource(dbUrl, dbUser, dbPassword)
             .locations("classpath:db/migration")
-//            .baselineOnMigrate(true)
+          //  .baselineOnMigrate(true)
             .outOfOrder(true)
+            .cleanDisabled(false) // Включить выполнение команды clean
             .load()
 
         if (appConfig.property("flyway.clean").getString().toBoolean()) {
@@ -32,6 +33,7 @@ object DatabaseFactory {
 
         flyway.migrate()
     }
+
 
     fun hikari(): HikariDataSource {
         val config = HikariConfig()
